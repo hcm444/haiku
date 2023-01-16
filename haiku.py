@@ -1,9 +1,13 @@
-import spacy
+
 from spacy.matcher import Matcher
+import spacy
 import syllapy
 import random
 import tweepy
 import configparser
+import csv
+import datetime
+# ...
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -29,8 +33,9 @@ patterns = [
 for i, pattern in enumerate(patterns):
     matcher.add(f"pattern{i}", [pattern])
 
-# Create an empty list to store haikus
+# Create an empty list to store haikus and a set to store used haikus
 haikus = []
+used_haikus = set()
 
 # Read the haiku file line by line
 with open("haiku.txt", "r") as f:
@@ -60,8 +65,17 @@ for haiku in haikus:
         elif syl_count == 7:
             g_7.add(span.text)
 
-# Choose random haikus and tweet it
+# Choose random haikus and tweet it, while checking if it was used before
 message = "%s\n%s\n%s" % (random.choice(list(g_5)), random.choice(list(g_7)), random.choice(list(g_5)))
+while message in used_haikus:
+    message = "%s\n%s\n%s" % (random.choice(list(g_5)), random.choice(list(g_7)), random.choice(list(g_5)))
+used_haikus.add(message)
+
 print(message)
 api.update_status(message)
 
+# Update the csv file with the newest haiku
+now = datetime.datetime.now()
+with open('haikus.csv', 'a', newline='') as csvfile:
+    haiku_writer = csv.writer(csvfile)
+    haiku_writer.writerow([now.strftime("%Y-%m-%d %H:%M:%S"), message])
